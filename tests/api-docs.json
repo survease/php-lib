@@ -1,0 +1,327 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Survease API V1",
+        "description": "API Documentation for Survease",
+        "contact": {
+            "email": "support@survease.com"
+        },
+        "version": "1.0.0",
+        "x-logo": {
+            "url": "/images/logo-color.png"
+        },
+        "termsOfService": "/en/terms-of-use"
+    },
+    "paths": {
+        "/api/v1/survey/{id}/invitations": {
+            "post": {
+                "summary": "Add Invitation(s)",
+                "description": "Submit a single or multiple invitations for dispatching. <br/> Invitations with duplicate emails will be ignored and only first will be accepted.",
+                "operationId": "postInvitation",
+                "tags": ["Invitation"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "description": "Survey ID for the invitation(s) to use",
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "firstName": {
+                                            "type": "string",
+                                            "description": "If `firstName` and `lastName` are missing, make sure your survey email and gratitude templates do not contain placeholders for them. Otherwise they will be replaced with dummy data."
+                                        },
+                                        "lastName": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "description": "Valid email address to receive the invitation."
+                                        },
+                                        "language": {
+                                            "type": "string",
+                                            "description": "ISO 639-1 two letter language code. Example: `et`, `ru`, `fi`, `lv`, `lt`. **Support for this language must be added to survey beforehand.**"
+                                        },
+                                        "realDate": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Unix Timestamp. Optional date to use instead of creation date when generating statistics. For example the day the hotel guest arrived instead of when the invitation was submitted to dispatch"
+                                        },
+                                        "dispatchAt": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Unix Timestamp. If this is present, the invitation will only be dispatched AFTER the given time. This can be used to defer dispatching of certain invitations"
+                                        },
+                                        "tags": {
+                                            "$ref": "#/components/schemas/InvitationTag"
+                                        }
+                                    },
+                                    "required": ["email"]
+                                }
+                            },
+                            "example": [
+                                {
+                                    "firstName": "John",
+                                    "lastName": "Connor",
+                                    "email": "john.connor@gmail.com",
+                                    "language": "et",
+                                    "realData": 1605430000,
+                                    "dispatchAt": 1605530012,
+                                    "tags": ["R42"]
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Invitations were processed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Summary of the request results"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "description": "Possible errors that prevented some of the invitations to be submitted. <br> Example of errors are: monthly package limitation hit, language unsupported, invitation receiver had previously opt-ed out of surveys. <br> Keys are emails and values are errors"
+                                        }
+                                    },
+                                    "required": ["message", "errors"]
+                                },
+                                "examples": {
+                                    "All accepted": {
+                                        "summary": "All invitations were submitted without any issues",
+                                        "value": {
+                                            "message": "All of the invitations were submitted for dispatch",
+                                            "errors": {}
+                                        }
+                                    },
+                                    "Some ignored": {
+                                        "summary": "Some of the invitations were submitted. But some had issues",
+                                        "value": {
+                                            "message": "Some of the invitations were submitted for dispatch",
+                                            "errors": {
+                                                "john.bane@gmail.com": "Recipient already completed a survey in the last 90 days"
+                                            }
+                                        }
+                                    },
+                                    "None submitted": {
+                                        "summary": "None of the invitations were submitted",
+                                        "value": {
+                                            "message": "None of the submitted invitations were added for dispatching",
+                                            "errors": {
+                                                "james.bond@gmail.com": "Email owner unsubscribed from surveys"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/InvitationFailedValidation"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RequestBodyValidationFailed"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "responses": {
+            "RequestBodyValidationFailed": {
+                "description": "Request did not pass validation according to API specification",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["message"]
+                        }
+                    }
+                }
+            },
+            "InvitationFailedValidation": {
+                "description": "The request did not pass basic validation",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "Errors object, where keys are invitation emails and values the error"
+                                }
+                            },
+                            "required": ["message", "errors"]
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/NotFound"
+                        }
+                    }
+                }
+            },
+            "Unauthenticated": {
+                "description": "Request unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Unauthenticated"
+                        }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "Invitation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Unique ID of the invitation"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "anonymous": {
+                        "type": "boolean",
+                        "description": "The source was anonymized due to sufficient time passed since the invitation submission."
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email of the invitation receiver",
+                        "format": "email"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["pending", "sent", "viewed", "completed"]
+                    },
+                    "createdAt": {
+                        "type": "datetime",
+                        "description": "Date when the invitation was submitted"
+                    },
+                    "tags": {
+                        "$ref": "#/components/schemas/InvitationTag"
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Language of the invitation"
+                    }
+                },
+                "required": ["id", "firstName", "lastName", "email", "status"],
+                "example": {
+                    "id": "aAbBcCDx",
+                    "firstName": "John",
+                    "lastName": "Smith",
+                    "email": "john.smith@email.com",
+                    "status": "sent",
+                    "anonymous": false,
+                    "createdAt": "2020-10-01 12:34:56",
+                    "tags": ["R24"],
+                    "language": "en"
+                }
+            },
+            "NotFound": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "summary": {
+                        "type": "string"
+                    }
+                },
+                "readOnly": true,
+                "example": {
+                    "code": 404,
+                    "summary": "Not Found",
+                    "message": "The requested resource is not found"
+                }
+            },
+            "Unauthenticated": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "readOnly": true
+            },
+            "InvitationTag": {
+                "type": "array",
+                "description": "Additional tags that are used to group invitations together. **Must** be between 2 and 255 characters",
+                "items": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 2
+                }
+            }
+        },
+        "securitySchemes": {
+            "Authorization Bearer": {
+                "description": "Token in the `Authorization` header. Example: `Authorization: Bearer <token>`. Token can be requested in your account settings",
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Invitation"
+        }
+    ],
+    "x-tagGroups": [
+        {
+            "name": "Getting started",
+            "tags": [
+                "Invitation"
+            ]
+        }
+    ],
+    "security": [
+        {
+            "Authorization Bearer": []
+        }
+    ]
+}
