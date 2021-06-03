@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Survease;
+namespace Survease\Api;
 
 use JsonException;
 use Psr\Http\Message\ResponseInterface;

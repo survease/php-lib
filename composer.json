@@ -25,7 +25,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Survease\\": "src"
+            "Survease\\Api\\": "src"
         }
     },
     "autoload-dev": {

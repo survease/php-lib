@@ -2,27 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Survease\Operations\Survey;
+namespace Survease\Api\Operations\Survey;
 
-use Survease\ApiResponse;
-use Survease\Client;
-use Survease\DTO\InvitationRecipient;
-use Survease\Operations\DispatchesRequests;
+use Survease\Api\DTO\InvitationRecipient;
+use Survease\Api\Operations\DispatchableResource;
 
-class Invitations implements DispatchesRequests
+class Invitations implements DispatchableResource
 {
     /**
      * @var array<InvitationRecipient>
      */
     private array $recipients = [];
 
-    private Client $client;
-
     private string $prefix;
 
-    public function __construct(Client $client, string $prefix)
+    public function __construct(string $prefix)
     {
-        $this->client = $client;
         $this->prefix = $prefix;
     }
 
@@ -31,11 +26,6 @@ class Invitations implements DispatchesRequests
         $this->recipients[] = $recipient;
 
         return $this;
-    }
-
-    public function dispatch(): ApiResponse
-    {
-        return $this->client->makeRequest($this);
     }
 
     public function payload(): ?string

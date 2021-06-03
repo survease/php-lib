@@ -2,14 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Survease\Operations;
+namespace Survease\Api\Operations;
 
-use Survease\ApiResponse;
-
-interface DispatchesRequests
+interface DispatchableResource
 {
-    public function dispatch(): ApiResponse;
-
     public function method(): string;
 
     public function uri(): string;

@@ -11,12 +11,12 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
-use Survease\ApiResponse;
-use Survease\Client;
-use Survease\Exceptions\AuthorizationException;
-use Survease\Exceptions\ServiceUnavailableException;
-use Survease\HttpClientFactory;
-use Survease\Operations\DispatchesRequests;
+use Psr\Http\Message\ResponseInterface;
+use Survease\Api\Client;
+use Survease\Api\Exceptions\AuthorizationException;
+use Survease\Api\Exceptions\ServiceUnavailableException;
+use Survease\Api\HttpClientFactory;
+use Survease\Api\Operations\DispatchableResource;
 
 class ClientTest extends TestCase
 {
@@ -41,11 +41,7 @@ class ClientTest extends TestCase
 
         $client = new Client($mockedHttpClient);
 
-        $c = new class() implements DispatchesRequests {
-            public function dispatch(): ApiResponse
-            {
-            }
-
+        $c = new class() implements DispatchableResource {
             public function uri(): string
             {
                 return '/uri';
@@ -79,11 +75,7 @@ class ClientTest extends TestCase
 
         $client = new Client($mockedHttpClient);
 
-        $c = new class() implements DispatchesRequests {
-            public function dispatch(): ApiResponse
-            {
-            }
-
+        $c = new class() implements DispatchableResource {
             public function uri(): string
             {
                 return '/uri';
@@ -103,5 +95,42 @@ class ClientTest extends TestCase
         $this->expectException(AuthorizationException::class);
 
         $client->makeRequest($c);
+    }
+
+    public function testAsyncRequest()
+    {
+        $mockedHttpClient = new \GuzzleHttp\Client([
+            'handler' => HandlerStack::create(
+                new MockHandler([
+                    new Response(200, [], json_encode(['message' => 'Msg', 'errors' => []])),
+                ])
+            ),
+        ]);
+
+        $client = new Client($mockedHttpClient);
+
+        $c = new class() implements DispatchableResource {
+            public function uri(): string
+            {
+                return '/uri';
+            }
+
+            public function method(): string
+            {
+                return 'post';
+            }
+
+            public function payload(): ?string
+            {
+                return null;
+            }
+        };
+
+        $client->makeRequestAsync($c)
+            ->then(function (ResponseInterface $response) {
+                static::assertSame(200, $response->getStatusCode());
+            }, function () {
+                static::assertFalse(true); // shouldn't be triggered
+            })->wait(); // wait, otherwise phpunit marks this test as risky
     }
 }

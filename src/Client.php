@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Survease;
+namespace Survease\Api;
 
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Request;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
-use Psr\Http\Client\ClientInterface;
-use Survease\Exceptions\AuthorizationException;
-use Survease\Exceptions\ServiceUnavailableException;
-use Survease\Exceptions\UnknownOperation;
-use Survease\Exceptions\ValidationException;
-use Survease\Operations;
+use GuzzleHttp\ClientInterface;
+use Survease\Api\Exceptions\AuthorizationException;
+use Survease\Api\Exceptions\ServiceUnavailableException;
+use Survease\Api\Exceptions\UnknownOperation;
+use Survease\Api\Exceptions\ValidationException;
+use Survease\Api\Operations;
 
 /**
  * Class Client
@@ -41,24 +42,29 @@ class Client
     public function __call(string $name, array $arguments = [])
     {
         if (isset($this->operations[$name])) {
-            return new $this->operations[$name]($this, ...$arguments);
+            return new $this->operations[$name](...$arguments);
         }
 
         throw new UnknownOperation(sprintf('No operation declared for `%s` name', $name));
     }
 
     /**
+     * @param Operations\DispatchableResource $resource
+     * @param array $options Additional request options passed to http client
+     * @return ApiResponse
      * @throws AuthorizationException
+     * @throws ClientExceptionInterface
      * @throws JsonException
      * @throws ServiceUnavailableException
      * @throws ValidationException
-     * @throws ClientExceptionInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function makeRequest(Operations\DispatchesRequests $resource): ApiResponse
+    public function makeRequest(Operations\DispatchableResource $resource, array $options = []): ApiResponse
     {
         try {
-            $response = $this->client->sendRequest(
-                new Request($resource->method(), $resource->uri(), [], $resource->payload())
+            $response = $this->client->send(
+                new Request($resource->method(), $resource->uri(), [], $resource->payload()),
+                $options
             );
         } catch (ClientExceptionInterface $e) {
             if ($e instanceof RequestException) {
@@ -69,6 +75,19 @@ class Client
         }
 
         return new ApiResponse($response);
+    }
+
+    /**
+     * @param Operations\DispatchableResource $resource
+     * @param array $options Additional request options passed to http client
+     * @return PromiseInterface
+     */
+    public function makeRequestAsync(Operations\DispatchableResource $resource, array $options = []): PromiseInterface
+    {
+        return $this->client->sendAsync(
+            new Request($resource->method(), $resource->uri(), [], $resource->payload()),
+            $options
+        );
     }
 
     /**

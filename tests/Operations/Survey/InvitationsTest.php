@@ -16,9 +16,9 @@ use League\OpenAPIValidation\PSR7\ServerRequestValidator;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Survease\Client;
-use Survease\DTO\InvitationRecipient;
-use Survease\Exceptions\ValidationException;
+use Survease\Api\Client;
+use Survease\Api\DTO\InvitationRecipient;
+use Survease\Api\Exceptions\ValidationException;
 use Survease\Tests\ServerRequestValidatorFactory;
 
 class InvitationsTest extends TestCase
@@ -38,10 +38,11 @@ class InvitationsTest extends TestCase
             )
         );
 
-        $response = $client->survey('id')
+        $resource = $client->survey('id')
             ->invitations()
-            ->add(new InvitationRecipient('unit@test.com', 'Unit', 'Test', 'en', time() - 1000, time()))
-            ->dispatch();
+            ->add(new InvitationRecipient('unit@test.com', 'Unit', 'Test', 'en', time() - 1000, time()));
+
+        $response = $client->makeRequest($resource);
 
         static::assertEmpty($response->getPayload()['errors']);
         static::assertIsString($response->getPayload()['message']);
@@ -62,12 +63,13 @@ class InvitationsTest extends TestCase
             )
         );
 
-        $response = $client->survey('id')
+        $resource = $client->survey('id')
             ->invitations()
             ->add(new InvitationRecipient('unit@test.com', 'Unit', 'Test', 'en', time() - 1000, time()))
             ->add(new InvitationRecipient('unit1@test.com', 'Unit1', 'Test1'))
-            ->add(new InvitationRecipient('unit2@test.com', 'Unit2', 'Test2', 'et', time(), time() + 100))
-            ->dispatch();
+            ->add(new InvitationRecipient('unit2@test.com', 'Unit2', 'Test2', 'et', time(), time() + 100));
+
+        $response = $client->makeRequest($resource);
 
         static::assertEmpty($response->getPayload()['errors']);
         static::assertIsString($response->getPayload()['message']);
@@ -94,12 +96,13 @@ class InvitationsTest extends TestCase
             )
         );
 
+        $resource = $client->survey('id')
+            ->invitations()
+            ->add(new InvitationRecipient('notanemail'));
+
         $this->expectException(ValidationException::class);
 
-        $response = $client->survey('id')
-            ->invitations()
-            ->add(new InvitationRecipient('notanemail'))
-            ->dispatch();
+        $client->makeRequest($resource);
     }
 
     private function validator(): ServerRequestValidator

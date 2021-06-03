@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Survease\DTO;
+namespace Survease\Api\DTO;
 
 use JsonSerializable;
 

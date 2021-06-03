@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Survease\Exceptions;
+namespace Survease\Api\Exceptions;
 
 class ValidationException extends OperationException
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Survease;
+namespace Survease\Api;
 
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\RequestOptions;
