@@ -11,16 +11,17 @@ composer require survease/php-lib
 ```php
 <?php
 
-$httpClient = \Survease\HttpClientFactory::make('apikey');
+$httpClient = \Survease\Api\HttpClientFactory::make('apikey');
 
-$client = new \Survease\Client($httpClient);
+$client = new \Survease\Api\Client($httpClient);
 
 // Add a single invitation to dispatch
 
-$response = $client->survey('surveyId')
+$resource = $client->survey('surveyId')
     ->invitations()
-    ->add(new \Survease\DTO\InvitationRecipient('email@email.com', 'John', 'Snow', 'ru'))
-    ->dispatch();
+    ->add(new \Survease\Api\DTO\InvitationRecipient('email@email.com', 'John', 'Snow', 'ru'));
+    
+$response = $client->makeRequest($resource);
     
 if ($response->isSuccessful()) {
     echo "Well done";
